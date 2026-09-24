@@ -26,4 +26,8 @@ abstract class EposPlatform extends PlatformInterface {
   Future<String?> getPlatformVersion() {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
+
+  Future<void> printTest() {
+    throw UnimplementedError('printTest() has not been implemented.');
+  }
 }

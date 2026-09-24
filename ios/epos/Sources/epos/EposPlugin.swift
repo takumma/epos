@@ -1,6 +1,5 @@
 import Flutter
 import UIKit
-import libepos2
 
 public class EposPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {

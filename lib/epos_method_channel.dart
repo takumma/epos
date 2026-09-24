@@ -16,4 +16,9 @@ class MethodChannelEpos extends EposPlatform {
     );
     return version;
   }
+
+  @override
+  Future<void> printTest() async {
+    await methodChannel.invokeMethod<void>('printTest');
+  }
 }
