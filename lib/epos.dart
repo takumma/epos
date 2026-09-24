@@ -1,4 +1,3 @@
-
 import 'epos_platform_interface.dart';
 
 class Epos {

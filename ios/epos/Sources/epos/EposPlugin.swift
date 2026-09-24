@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import libepos2
 
 public class EposPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
@@ -12,8 +13,14 @@ public class EposPlugin: NSObject, FlutterPlugin {
     switch call.method {
     case "getPlatformVersion":
       result("iOS " + UIDevice.current.systemVersion)
+    case "printTest":
+      printTest(result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
+  }
+
+  private func printTest(result: @escaping FlutterResult) {
+    result(nil)
   }
 }
