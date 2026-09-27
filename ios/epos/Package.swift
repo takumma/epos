@@ -15,10 +15,20 @@ let package = Package(
         .package(name: "FlutterFramework", path: "../FlutterFramework")
     ],
     targets: [
+        .binaryTarget(
+            name: "libepos2",
+            path: "Frameworks/libepos2.xcframework"
+        ),
+        .binaryTarget(
+            name: "libeposeasyselect",
+            path: "Frameworks/libeposeasyselect.xcframework"
+        ),
         .target(
             name: "epos",
             dependencies: [
-                .product(name: "FlutterFramework", package: "FlutterFramework")
+                .product(name: "FlutterFramework", package: "FlutterFramework"),
+                "libepos2",
+                "libeposeasyselect"
             ],
             resources: [
                 // If your plugin requires a privacy manifest, for example if it uses any required
