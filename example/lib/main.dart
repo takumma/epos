@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'dart:async';
 
 import 'package:flutter/services.dart';
@@ -17,12 +18,22 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _eposPlugin = Epos();
+  final _epos = Epos();
+
+  StreamSubscription<EposDevice>? _subscription;
+
+  final List<EposDevice> devices = [];
 
   @override
   void initState() {
     super.initState();
     initPlatformState();
+
+    _subscription = _epos.discoveryStream.listen((device) {
+      setState(() {
+        devices.add(device);
+      });
+    });
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -32,7 +43,7 @@ class _MyAppState extends State<MyApp> {
     // We also handle the message potentially returning null.
     try {
       platformVersion =
-          await _eposPlugin.getPlatformVersion() ?? 'Unknown platform version';
+          await _epos.getPlatformVersion() ?? 'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -48,11 +59,93 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
+  void dispose() {
+    _subscription?.cancel();
+    _epos.stopDiscovery();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('Plugin example app')),
-        body: Center(child: Text('Running on: $_platformVersion\n')),
+        body: Center(
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion\n'),
+              ElevatedButton(
+                onPressed: () async {
+                  await _epos.startDiscovery();
+                },
+                child: const Text('Discovery'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await _epos.stopDiscovery();
+                },
+                child: const Text('Stop Discovery'),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: devices.length,
+                  itemBuilder: (context, index) {
+                    final device = devices[index];
+                    return ListTile(
+                      title: Text(device.deviceName),
+                      subtitle: Text(device.target),
+                      trailing: ElevatedButton(
+                        onPressed: () async {
+                          try {
+                            await _epos.connect(device.target);
+                            if (!context.mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PrintPage(device: device),
+                              ),
+                            );
+                          } on PlatformException catch (e) {
+                            debugPrint('Failed to connect: $e');
+                          }
+                        },
+                        child: const Text('Connect'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class PrintPage extends StatelessWidget {
+  final EposDevice device;
+  PrintPage({super.key, required this.device});
+  final _epos = Epos();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Print Page')),
+      body: Column(
+        children: [
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await _epos.printText("Hello World!");
+                debugPrint('Printed successfully');
+              } on PlatformException catch (e) {
+                debugPrint('Failed to connect: $e');
+              }
+            },
+            child: const Text('Print'),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:epos/src/epos_device.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'epos_method_channel.dart';
@@ -23,11 +24,31 @@ abstract class EposPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  Stream<EposDevice> get discoveryStream {
+    throw UnimplementedError('discoveryStream has not been implemented.');
+  }
+
   Future<String?> getPlatformVersion() {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
 
-  Future<void> printTest() {
-    throw UnimplementedError('printTest() has not been implemented.');
+  Future<void> startDiscovery() {
+    throw UnimplementedError('startDiscovery() has not been implemented.');
+  }
+
+  Future<void> stopDiscovery() {
+    throw UnimplementedError('stopDiscovery() has not been implemented.');
+  }
+
+  Future<void> connect(String target) {
+    throw UnimplementedError('connect() has not been implemented.');
+  }
+
+  Future<void> disconnect() {
+    throw UnimplementedError('disconnect() has not been implemented.');
+  }
+
+  Future<void> printText(String text) {
+    throw UnimplementedError('printText() has not been implemented.');
   }
 }

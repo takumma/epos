@@ -1,3 +1,4 @@
+import 'package:epos/src/epos_device.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -7,7 +8,9 @@ import 'epos_platform_interface.dart';
 class MethodChannelEpos extends EposPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel('epos');
+  static const MethodChannel methodChannel = MethodChannel('epos/methods');
+
+  static const EventChannel discoveryChannel = EventChannel('epos/discovery');
 
   @override
   Future<String?> getPlatformVersion() async {
@@ -18,7 +21,35 @@ class MethodChannelEpos extends EposPlatform {
   }
 
   @override
-  Future<void> printTest() async {
-    await methodChannel.invokeMethod<void>('printTest');
+  Stream<EposDevice> get discoveryStream {
+    return discoveryChannel.receiveBroadcastStream().map((event) {
+      final map = Map<String, dynamic>.from(event);
+      return EposDevice.fromMap(map);
+    });
+  }
+
+  @override
+  Future<void> startDiscovery() async {
+    await methodChannel.invokeMethod<void>('startDiscovery');
+  }
+
+  @override
+  Future<void> stopDiscovery() async {
+    await methodChannel.invokeMethod<void>('stopDiscovery');
+  }
+
+  @override
+  Future<void> connect(String target) async {
+    await methodChannel.invokeMethod<void>('connect', {'target': target});
+  }
+
+  @override
+  Future<void> disconnect() async {
+    await methodChannel.invokeMethod<void>('disconnect');
+  }
+
+  @override
+  Future<void> printText(String text) async {
+    await methodChannel.invokeMethod<void>('printText', {'text': text});
   }
 }

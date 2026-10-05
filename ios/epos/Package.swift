@@ -28,7 +28,7 @@ let package = Package(
             dependencies: [
                 .product(name: "FlutterFramework", package: "FlutterFramework"),
                 "libepos2",
-                "libeposeasyselect"
+                "libeposeasyselect",
             ],
             resources: [
                 // If your plugin requires a privacy manifest, for example if it uses any required
@@ -41,6 +41,6 @@ let package = Package(
                 // the following instructions to add them:
                 // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
             ]
-        )
+        ),
     ]
 )
