@@ -1,34 +1,40 @@
 import 'epos_platform_interface.dart';
 import 'src/epos_device.dart';
+import 'src/epos_printer.dart';
 
 export 'src/epos_device.dart';
+export 'src/epos_printer.dart';
+export 'src/epos_printer_job.dart';
 
 class Epos {
+  Epos({EposPlatform? platform})
+    : _platform = platform ?? EposPlatform.instance;
+
+  final EposPlatform _platform;
+
   Stream<EposDevice> get discoveryStream {
-    return EposPlatform.instance.discoveryStream;
+    return _platform.discoveryStream;
   }
 
   Future<String?> getPlatformVersion() {
-    return EposPlatform.instance.getPlatformVersion();
+    return _platform.getPlatformVersion();
   }
 
   Future<void> startDiscovery() async {
-    await EposPlatform.instance.startDiscovery();
+    await _platform.startDiscovery();
   }
 
   Future<void> stopDiscovery() async {
-    await EposPlatform.instance.stopDiscovery();
+    await _platform.stopDiscovery();
   }
 
-  Future<void> connect(String target) async {
-    await EposPlatform.instance.connect(target);
+  Future<EposPrinter> connect(EposDevice device) async {
+    await _platform.connect(device.target);
+
+    return EposPrinter(device: device, platform: _platform);
   }
 
   Future<void> disconnect() async {
-    await EposPlatform.instance.disconnect();
-  }
-
-  Future<void> printText(String text) async {
-    await EposPlatform.instance.printText(text);
+    await _platform.disconnect();
   }
 }

@@ -97,12 +97,13 @@ class _MyAppState extends State<MyApp> {
                       trailing: ElevatedButton(
                         onPressed: () async {
                           try {
-                            await _epos.connect(device.target);
+                            final printer = await _epos.connect(device);
                             if (!context.mounted) return;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => PrintPage(device: device),
+                                builder: (context) =>
+                                    PrintPage(printer: printer),
                               ),
                             );
                           } on PlatformException catch (e) {
@@ -124,9 +125,8 @@ class _MyAppState extends State<MyApp> {
 }
 
 class PrintPage extends StatelessWidget {
-  final EposDevice device;
-  PrintPage({super.key, required this.device});
-  final _epos = Epos();
+  final EposPrinter printer;
+  const PrintPage({super.key, required this.printer});
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +137,18 @@ class PrintPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               try {
-                await _epos.printText("Hello World!");
+                final job = printer.createPrintJob();
+                job
+                  ..textLang(EposTextLanguage.ja)
+                  ..feed(1)
+                  ..textAlign(EposTextAlign.center)
+                  ..text("Hello World!\n")
+                  ..text("텐나 서점\n")
+                  ..textAlign(EposTextAlign.left)
+                  ..text("어느 사소설 작가의 일지 — 야성의 장, 요도의 장, 불굴의 장\n")
+                  ..text("500엔\n")
+                  ..cut();
+                await printer.print(job);
                 debugPrint('Printed successfully');
               } on PlatformException catch (e) {
                 debugPrint('Failed to connect: $e');

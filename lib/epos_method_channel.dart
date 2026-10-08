@@ -1,8 +1,8 @@
-import 'package:epos/src/epos_device.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'epos_platform_interface.dart';
+import 'src/epos_device.dart';
 
 /// An implementation of [EposPlatform] that uses method channels.
 class MethodChannelEpos extends EposPlatform {
@@ -51,5 +51,12 @@ class MethodChannelEpos extends EposPlatform {
   @override
   Future<void> printText(String text) async {
     await methodChannel.invokeMethod<void>('printText', {'text': text});
+  }
+
+  @override
+  Future<void> sendPrintJob(List<Map<String, dynamic>> commands) async {
+    await methodChannel.invokeMethod<void>('sendPrintJob', {
+      'commands': commands,
+    });
   }
 }

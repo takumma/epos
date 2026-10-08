@@ -57,4 +57,9 @@ class EposWeb extends EposPlatform {
   Future<void> printText(String text) async {
     // Web implementation for printText
   }
+
+  @override
+  Future<void> sendPrintJob(List<Map<String, dynamic>> commands) async {
+    // Web implementation for sendPrintJob
+  }
 }

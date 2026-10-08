@@ -37,6 +37,8 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
             disconnect(result: result)
         case "printText":
             printText(result: result, arguments: call.arguments)
+        case "sendPrintJob":
+            sendPrintJob(result: result, arguments: call.arguments)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -144,7 +146,7 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
         status = printer?.addText("==============================\n")
         status = printer?.addText("Hello World!\n")
         status = printer?.addText("==============================\n")
-        
+
         print("addText: \(status)")
         if status != EPOS2_SUCCESS.rawValue {
             result(
@@ -153,7 +155,7 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
                     message: "Failed to add text", details: status))
             return
         }
-        
+
         status = printer?.sendData(Int(EPOS2_PARAM_DEFAULT))
         print("sendData: \(status)")
 
@@ -168,13 +170,189 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
         result(nil)
     }
 
+    private func sendPrintJob(result: @escaping FlutterResult, arguments: Any?)
+    {
+        guard let args = arguments as? [String: Any],
+            let commands = args["commands"] as? [[String: Any]]
+        else {
+            result(
+                FlutterError(
+                    code: "INVALID_ARGUMENTS",
+                    message: "Invalid arguments for sendPrintJob", details: nil)
+            )
+            return
+        }
+
+        guard printer != nil else {
+            result(
+                FlutterError(
+                    code: "PRINTER_NOT_CONNECTED",
+                    message: "Printer is not connected", details: nil))
+            return
+        }
+
+        var status: Int32 = EPOS2_SUCCESS.rawValue
+        for command in commands {
+            if let type = command["type"] as? String {
+                switch type {
+                case "text":
+                    if let text = command["text"] as? String {
+                        if containsKorean(text) {
+                            if let image = renderTextAsImage(text) {
+                                status =
+                                    printer?.add(
+                                        image,
+                                        x: 0,
+                                        y: 0,
+                                        width: Int(image.size.width),
+                                        height: Int(image.size.height),
+                                        color: EPOS2_COLOR_1.rawValue,
+                                        mode: EPOS2_MODE_MONO.rawValue,
+                                        halftone: EPOS2_HALFTONE_DITHER
+                                            .rawValue,
+                                        brightness: Double(EPOS2_PARAM_DEFAULT),
+                                        compress: EPOS2_COMPRESS_AUTO.rawValue
+                                    ) ?? EPOS2_ERR_PARAM.rawValue
+                            }
+                        } else {
+
+                            status =
+                                printer?.addText(text)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        }
+                    }
+                case "textLang":
+                    if let lang = command["lang"] as? String {
+                        switch lang {
+                        case "enAwk":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_EN.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "ja":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_JA.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "zhCh":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_ZH_CN.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "zhTw":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_ZH_TW.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "ko":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_KO.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "th":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_TH.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "vi":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_VI.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "multi":
+                            status =
+                                printer?.addTextLang(EPOS2_LANG_MULTI.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        default:
+                            break
+                        }
+                    }
+                case "align":
+                    if let align = command["align"] as? String {
+                        switch align {
+                        case "left":
+                            status =
+                                printer?.addTextAlign(EPOS2_ALIGN_LEFT.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "center":
+                            status =
+                                printer?.addTextAlign(
+                                    EPOS2_ALIGN_CENTER.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        case "right":
+                            status =
+                                printer?.addTextAlign(
+                                    EPOS2_ALIGN_RIGHT.rawValue)
+                                ?? EPOS2_ERR_PARAM.rawValue
+                        default:
+                            break
+                        }
+                    }
+                case "feed":
+                    if let lines = command["lines"] as? Int {
+                        status =
+                            printer?.addFeedLine(lines)
+                            ?? EPOS2_ERR_PARAM.rawValue
+                    }
+                case "cut":
+                    status =
+                        printer?.addCut(EPOS2_CUT_FEED.rawValue)
+                        ?? EPOS2_ERR_PARAM.rawValue
+                default:
+                    break
+                }
+            }
+            if status != EPOS2_SUCCESS.rawValue {
+                result(
+                    FlutterError(
+                        code: "PRINT_FAILED",
+                        message: "Failed to add command", details: status))
+                return
+            }
+        }
+
+        status =
+            printer?.sendData(Int(EPOS2_PARAM_DEFAULT))
+            ?? EPOS2_ERR_PARAM.rawValue
+        if status != EPOS2_SUCCESS.rawValue {
+            result(
+                FlutterError(
+                    code: "SEND_FAILED",
+                    message: "Failed to send print job", details: status))
+            return
+        }
+
+        result(nil)
+    }
+
+    private func containsKorean(_ text: String) -> Bool {
+        return text.range(of: "\\p{Hangul}", options: .regularExpression) != nil
+    }
+
+    private func renderTextAsImage(
+        _ text: String,
+        fontSize: CGFloat = 24
+    ) -> UIImage? {
+        let font = UIFont.systemFont(ofSize: fontSize)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font
+        ]
+
+        let textSize = (text as NSString).size(withAttributes: attributes)
+        let size = CGSize(
+            width: ceil(textSize.width) + 8, height: ceil(textSize.height) + 8)
+
+        UIGraphicsBeginImageContextWithOptions(size, true, 1.0)
+        defer { UIGraphicsEndImageContext() }
+
+        UIColor.white.setFill()
+        UIRectFill(CGRect(origin: .zero, size: size))
+        (text as NSString).draw(
+            at: CGPoint(x: 4, y: 4), withAttributes: attributes)
+
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+
     private func createPrinter() -> Bool {
         if printer != nil {
             return true
         }
         printer = Epos2Printer.init(
             printerSeries: EPOS2_TM_T88.rawValue,
-            lang: EPOS2_MODEL_ANK.rawValue
+            lang: EPOS2_MODEL_JAPANESE.rawValue
         )
 
         printer?.setReceiveEventDelegate(self)
@@ -189,21 +367,21 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
         printJobId: String!
     ) {
         print("===== onPtrReceive =====")
-            print("code: \(code)")
-            print("printJobId: \(printJobId ?? "")")
+        print("code: \(code)")
+        print("printJobId: \(printJobId ?? "")")
 
-            if let status = status {
-                print("online: \(status.online)")
-                print("connection: \(status.connection)")
-                print("paper: \(status.paper)")
-                print("coverOpen: \(status.coverOpen)")
-                print("paperFeed: \(status.paperFeed)")
-                print("errorStatus: \(status.errorStatus)")
-                print("autoRecoverError: \(status.autoRecoverError)")
-                print("unrecoverError: \(status.unrecoverError)")
-            }
+        if let status = status {
+            print("online: \(status.online)")
+            print("connection: \(status.connection)")
+            print("paper: \(status.paper)")
+            print("coverOpen: \(status.coverOpen)")
+            print("paperFeed: \(status.paperFeed)")
+            print("errorStatus: \(status.errorStatus)")
+            print("autoRecoverError: \(status.autoRecoverError)")
+            print("unrecoverError: \(status.unrecoverError)")
+        }
 
-            print("========================")
+        print("========================")
     }
 
     public func onDiscovery(_ deviceInfo: Epos2DeviceInfo!) {
