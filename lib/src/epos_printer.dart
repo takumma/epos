@@ -9,10 +9,6 @@ class EposPrinter {
   final EposDevice device;
   final EposPlatform _platform;
 
-  Future<void> printText(String text) async {
-    await _platform.printText(text);
-  }
-
   Future<void> disconnect() async {
     await _platform.disconnect();
   }

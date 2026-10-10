@@ -49,11 +49,6 @@ class MethodChannelEpos extends EposPlatform {
   }
 
   @override
-  Future<void> printText(String text) async {
-    await methodChannel.invokeMethod<void>('printText', {'text': text});
-  }
-
-  @override
   Future<void> sendPrintJob(List<Map<String, dynamic>> commands) async {
     await methodChannel.invokeMethod<void>('sendPrintJob', {
       'commands': commands,

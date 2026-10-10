@@ -35,8 +35,6 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
             connect(result: result, arguments: call.arguments)
         case "disconnect":
             disconnect(result: result)
-        case "printText":
-            printText(result: result, arguments: call.arguments)
         case "sendPrintJob":
             sendPrintJob(result: result, arguments: call.arguments)
         default:
@@ -114,62 +112,6 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
         result(nil)
     }
 
-    private func printText(result: @escaping FlutterResult, arguments: Any?) {
-        guard let args = arguments as? [String: Any],
-            let text = args["text"] as? String
-        else {
-            result(
-                FlutterError(
-                    code: "INVALID_ARGUMENTS",
-                    message: "Invalid arguments for printText", details: nil))
-            return
-        }
-
-        guard printer != nil else {
-            result(
-                FlutterError(
-                    code: "PRINTER_NOT_CONNECTED",
-                    message: "Printer is not connected", details: nil))
-            return
-        }
-
-        var status = printer?.addTextAlign(EPOS2_ALIGN_LEFT.rawValue)
-        print("addTextAlign: \(status)")
-        if status != EPOS2_SUCCESS.rawValue {
-            result(
-                FlutterError(
-                    code: "PRINT_FAILED",
-                    message: "Failed to set text alignment", details: status))
-            return
-        }
-
-        status = printer?.addText("==============================\n")
-        status = printer?.addText("Hello World!\n")
-        status = printer?.addText("==============================\n")
-
-        print("addText: \(status)")
-        if status != EPOS2_SUCCESS.rawValue {
-            result(
-                FlutterError(
-                    code: "PRINT_FAILED",
-                    message: "Failed to add text", details: status))
-            return
-        }
-
-        status = printer?.sendData(Int(EPOS2_PARAM_DEFAULT))
-        print("sendData: \(status)")
-
-        if status != EPOS2_SUCCESS.rawValue {
-            result(
-                FlutterError(
-                    code: "ADD_TEXT_FAILED",
-                    message: "Failed to add text", details: status))
-            return
-        }
-
-        result(nil)
-    }
-
     private func sendPrintJob(result: @escaping FlutterResult, arguments: Any?)
     {
         guard let args = arguments as? [String: Any],
@@ -191,7 +133,7 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
             return
         }
 
-        var status: Int32 = EPOS2_SUCCESS.rawValue
+        var status: Int32? = EPOS2_SUCCESS.rawValue
         for command in commands {
             if let type = command["type"] as? String {
                 switch type {
@@ -223,63 +165,28 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
                     }
                 case "textLang":
                     if let lang = command["lang"] as? String {
-                        switch lang {
-                        case "enAwk":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_EN.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "ja":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_JA.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "zhCh":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_ZH_CN.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "zhTw":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_ZH_TW.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "ko":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_KO.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "th":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_TH.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "vi":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_VI.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "multi":
-                            status =
-                                printer?.addTextLang(EPOS2_LANG_MULTI.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        default:
-                            break
-                        }
+                        status = printer?.addTextLang(Epos2Lang(lang).rawValue)
                     }
                 case "align":
                     if let align = command["align"] as? String {
-                        switch align {
-                        case "left":
-                            status =
-                                printer?.addTextAlign(EPOS2_ALIGN_LEFT.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "center":
-                            status =
-                                printer?.addTextAlign(
-                                    EPOS2_ALIGN_CENTER.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        case "right":
-                            status =
-                                printer?.addTextAlign(
-                                    EPOS2_ALIGN_RIGHT.rawValue)
-                                ?? EPOS2_ERR_PARAM.rawValue
-                        default:
-                            break
-                        }
+                        printer?.addTextAlign(Epos2Align(align).rawValue)
+                    }
+                case "style":
+                    if let reverse = command["reverse"] as? Bool,
+                       let ul = command["ul"] as? Bool,
+                       let em = command["em"] as? Bool,
+                       let color = command["color"] as? String {
+                        status = printer?.addTextStyle(
+                            reverse.eposBoolValue,
+                            ul: ul.eposBoolValue,
+                            em: em.eposBoolValue,
+                            color: Epos2Color(color).rawValue
+                        ) ?? EPOS2_ERR_PARAM.rawValue
+                    }
+                case "textSmooth":
+                    if let smooth = command["smooth"] as? Bool {
+                        status = printer?.addTextSmooth(smooth.eposBoolValue)
+                            ?? EPOS2_ERR_PARAM.rawValue
                     }
                 case "feed":
                     if let lines = command["lines"] as? Int {
@@ -409,5 +316,89 @@ extension EposPlugin: FlutterStreamHandler {
     public func onCancel(withArguments arguments: Any?) -> FlutterError? {
         discoverySink = nil
         return nil
+    }
+}
+
+extension Epos2Align {
+    init(_ s: String) {
+        switch s {
+        case "left":
+            self = EPOS2_ALIGN_LEFT
+        case "center":
+            self = EPOS2_ALIGN_CENTER
+        case "right":
+            self = EPOS2_ALIGN_RIGHT
+        default:
+            self = EPOS2_ALIGN_LEFT
+        }
+    }
+}
+
+extension Epos2Color {
+    init(_ s: String) {
+        switch s {
+        case "color1":
+            self = EPOS2_COLOR_1
+        case "color2":
+            self = EPOS2_COLOR_2
+        case "color3":
+            self = EPOS2_COLOR_3
+        case "color4":
+            self = EPOS2_COLOR_4
+        default:
+            self = EPOS2_COLOR_1
+        }
+    }
+}
+
+extension Epos2Lang {
+    init(_ s: String) {
+        switch s {
+        case "enAwk":
+            self = EPOS2_LANG_EN
+        case "ja":
+            self = EPOS2_LANG_JA
+        case "zhCh":
+            self = EPOS2_LANG_ZH_CN
+        case "zhTw":
+            self = EPOS2_LANG_ZH_TW
+        case "ko":
+            self = EPOS2_LANG_KO
+        case "th":
+            self = EPOS2_LANG_TH
+        case "vi":
+            self = EPOS2_LANG_VI
+        case "multi":
+            self = EPOS2_LANG_MULTI
+        default:
+            self = EPOS2_LANG_EN
+        }
+    }
+}
+
+extension Epos2Cut {
+    init(_ s: String) {
+        switch s {
+        case "cutFeed":
+            self = EPOS2_CUT_FEED
+        case "cutNoFeed":
+            self = EPOS2_CUT_NO_FEED
+        case "cutReserve":
+            self = EPOS2_CUT_RESERVE
+        case "fullCutFeed":
+            self = EPOS2_FULL_CUT_FEED
+        case "fullCutNoFeed":
+            self = EPOS2_FULL_CUT_NO_FEED
+        case "fullCutReserve":
+            self = EPOS2_FULL_CUT_RESERVE
+        default:
+            self = EPOS2_CUT_FEED
+        }
+    }
+}
+
+extension Bool {
+    var eposBoolValue: Int32 {
+        return self ? EPOS2_TRUE : EPOS2_FALSE
     }
 }

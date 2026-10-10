@@ -20,6 +20,34 @@ class EposPrinterJob {
     return this;
   }
 
+  EposPrinterJob textFont(EposTextFont font) {
+    _commands.add({'type': 'textFont', 'font': font.name});
+    return this;
+  }
+
+  EposPrinterJob textSize(int width, int height) {
+    assert(width > 0 && width <= 8, 'Text width must be between 1 and 8');
+    assert(height > 0 && height <= 8, 'Text height must be between 1 and 8');
+    _commands.add({'type': 'textSize', 'width': width, 'height': height});
+    return this;
+  }
+
+  EposPrinterJob textStyle(EposTextStyle style) {
+    _commands.add({
+      'type': 'textStyle',
+      'reverse': style.reverse,
+      'ul': style.ul,
+      'em': style.em,
+      'color': style.color.name,
+    });
+    return this;
+  }
+
+  EposPrinterJob textSmooth(bool smooth) {
+    _commands.add({'type': 'textSmooth', 'smooth': smooth});
+    return this;
+  }
+
   EposPrinterJob textAlign(EposTextAlign align) {
     _commands.add({'type': 'textAlign', 'align': align.name});
     return this;
@@ -30,8 +58,8 @@ class EposPrinterJob {
     return this;
   }
 
-  EposPrinterJob cut() {
-    _commands.add({'type': 'cut'});
+  EposPrinterJob cut({EposCutType type = EposCutType.cutFeed}) {
+    _commands.add({'type': 'cut', 'cutType': type.name});
     return this;
   }
 
@@ -51,4 +79,34 @@ enum EposTextLanguage {
   th, // Thai
   vi, // Vietnamese
   multi, // multiple languages (UTF-8)
+}
+
+enum EposTextFont { fontA, fontB }
+
+class EposTextStyle {
+  EposTextStyle({
+    this.reverse = false,
+    this.ul = false,
+    this.em = false,
+    this.color = EposTextColor.color1,
+  });
+  final bool reverse;
+  final bool ul; // underline
+  final bool em; // emphasis (bold)
+  final EposTextColor color;
+
+  Map<String, dynamic> toMap() {
+    return {'reverse': reverse, 'ul': ul, 'em': em, 'color': color.name};
+  }
+}
+
+enum EposTextColor { color1, color2, color3, color4 }
+
+enum EposCutType {
+  cutFeed,
+  cutNoFeed,
+  cutReserve,
+  fullCutFeed,
+  fullCutNoFeed,
+  fullCutReserve,
 }

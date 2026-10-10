@@ -48,10 +48,6 @@ abstract class EposPlatform extends PlatformInterface {
     throw UnimplementedError('disconnect() has not been implemented.');
   }
 
-  Future<void> printText(String text) {
-    throw UnimplementedError('printText() has not been implemented.');
-  }
-
   Future<void> sendPrintJob(List<Map<String, dynamic>> commands) {
     throw UnimplementedError('sendPrintJob() has not been implemented.');
   }
