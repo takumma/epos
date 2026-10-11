@@ -17,7 +17,9 @@ class EposPrinter {
     await _platform.sendPrintJob(job.commands);
   }
 
-  EposPrinterJob createPrintJob() {
-    return EposPrinterJob(platform: _platform);
+  EposPrinterJob createPrintJob({
+    EposTextLanguage textLang = EposTextLanguage.enAwk,
+  }) {
+    return EposPrinterJob(textLang: textLang, platform: _platform);
   }
 }

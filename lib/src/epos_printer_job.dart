@@ -1,18 +1,19 @@
 import '../epos_platform_interface.dart';
 
 class EposPrinterJob {
-  EposPrinterJob({EposPlatform? platform})
+  EposPrinterJob({required this._textLang, EposPlatform? platform})
     : _platform = platform ?? EposPlatform.instance;
 
   final EposPlatform _platform;
+
+  EposTextLanguage _textLang;
 
   final List<Map<String, dynamic>> _commands = [];
 
   List<Map<String, dynamic>> get commands => List.unmodifiable(_commands);
 
-  EposPrinterJob textLang(EposTextLanguage lang) {
-    _commands.add({'type': 'textLang', 'lang': lang.name});
-    return this;
+  void setTextLang(EposTextLanguage lang) {
+    _textLang = lang;
   }
 
   EposPrinterJob text(String text) {
@@ -53,8 +54,13 @@ class EposPrinterJob {
     return this;
   }
 
-  EposPrinterJob feed(int lines) {
-    _commands.add({'type': 'feed', 'lines': lines});
+  EposPrinterJob feed(int unit) {
+    _commands.add({'type': 'feedUnit', 'unit': unit});
+    return this;
+  }
+
+  EposPrinterJob feedLine(int line) {
+    _commands.add({'type': 'feedLine', 'line': line});
     return this;
   }
 
@@ -64,7 +70,10 @@ class EposPrinterJob {
   }
 
   Future<void> send() async {
-    await _platform.sendPrintJob(_commands);
+    await _platform.sendPrintJob([
+      {'type': 'textLang', 'lang': _textLang.name},
+      ..._commands,
+    ]);
   }
 }
 

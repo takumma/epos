@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:epos/epos.dart';
 
+import 'editor_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -86,6 +88,7 @@ class _MyAppState extends State<MyApp> {
                 },
                 child: const Text('Stop Discovery'),
               ),
+              if (devices.isNotEmpty) PrintButton(device: devices.first),
               Expanded(
                 child: ListView.builder(
                   itemCount: devices.length,
@@ -103,7 +106,7 @@ class _MyAppState extends State<MyApp> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    PrintPage(printer: printer),
+                                    ReceiptEditorScreen(printer: printer),
                               ),
                             );
                           } on PlatformException catch (e) {
@@ -124,40 +127,35 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class PrintPage extends StatelessWidget {
-  final EposPrinter printer;
-  const PrintPage({super.key, required this.printer});
+class PrintButton extends StatelessWidget {
+  final Epos _epos = Epos();
+  final EposDevice device;
+  PrintButton({super.key, required this.device});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Print Page')),
-      body: Column(
-        children: [
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final job = printer.createPrintJob();
-                job
-                  ..textLang(EposTextLanguage.ja)
-                  ..feed(1)
-                  ..textAlign(EposTextAlign.center)
-                  ..text("Hello World!\n")
-                  ..text("텐나 서점\n")
-                  ..textAlign(EposTextAlign.left)
-                  ..text("어느 사소설 작가의 일지 — 야성의 장, 요도의 장, 불굴의 장\n")
-                  ..text("500엔\n")
-                  ..cut();
-                await printer.print(job);
-                debugPrint('Printed successfully');
-              } on PlatformException catch (e) {
-                debugPrint('Failed to connect: $e');
-              }
-            },
-            child: const Text('Print'),
-          ),
-        ],
-      ),
+    return ElevatedButton(
+      onPressed: () async {
+        try {
+          final printer = await _epos.connect(device);
+          final job = printer.createPrintJob();
+          job.setTextLang(EposTextLanguage.ja);
+          job
+            ..feed(1)
+            ..textAlign(EposTextAlign.center)
+            ..text("Hello World!\n")
+            ..text("텐나 서점\n")
+            ..textAlign(EposTextAlign.left)
+            ..text("어느 사소설 작가의 일지 — 야성의 장, 요도의 장, 불굴의 장\n")
+            ..text("500엔\n")
+            ..cut();
+          await printer.print(job);
+          debugPrint('Printed successfully');
+        } on PlatformException catch (e) {
+          debugPrint('Failed to connect: $e');
+        }
+      },
+      child: const Text('Print'),
     );
   }
 }

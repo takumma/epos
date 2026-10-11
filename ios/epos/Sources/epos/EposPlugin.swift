@@ -167,11 +167,22 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
                     if let lang = command["lang"] as? String {
                         status = printer?.addTextLang(Epos2Lang(lang).rawValue)
                     }
-                case "align":
+                case "textAlign":
                     if let align = command["align"] as? String {
                         printer?.addTextAlign(Epos2Align(align).rawValue)
                     }
-                case "style":
+                case "textSize":
+                    if let width = command["width"] as? Int,
+                       let height = command["height"] as? Int {
+                        status = printer?.addTextSize(width, height: height)
+                            ?? EPOS2_ERR_PARAM.rawValue
+                    }
+                case "textFont":
+                    if let font = command["font"] as? String {
+                        status = printer?.addTextFont(Epos2Font(font).rawValue)
+                            ?? EPOS2_ERR_PARAM.rawValue
+                    }
+                case "textStyle":
                     if let reverse = command["reverse"] as? Bool,
                        let ul = command["ul"] as? Bool,
                        let em = command["em"] as? Bool,
@@ -188,16 +199,24 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
                         status = printer?.addTextSmooth(smooth.eposBoolValue)
                             ?? EPOS2_ERR_PARAM.rawValue
                     }
-                case "feed":
-                    if let lines = command["lines"] as? Int {
+                case "feedUnit":
+                    if let unit = command["unit"] as? Int {
                         status =
-                            printer?.addFeedLine(lines)
+                            printer?.addFeedUnit(unit)
+                            ?? EPOS2_ERR_PARAM.rawValue
+                    }
+                case "feedLine":
+                    if let line = command["line"] as? Int {
+                        status =
+                            printer?.addFeedLine(line)
                             ?? EPOS2_ERR_PARAM.rawValue
                     }
                 case "cut":
-                    status =
-                        printer?.addCut(EPOS2_CUT_FEED.rawValue)
-                        ?? EPOS2_ERR_PARAM.rawValue
+                    if let type = command["cutType"] as? String {
+                        status =
+                            printer?.addCut(Epos2Cut(type).rawValue)
+                            ?? EPOS2_ERR_PARAM.rawValue
+                    }
                 default:
                     break
                 }
@@ -372,6 +391,19 @@ extension Epos2Lang {
             self = EPOS2_LANG_MULTI
         default:
             self = EPOS2_LANG_EN
+        }
+    }
+}
+
+extension Epos2Font {
+    init(_ s: String) {
+        switch s {
+        case "fontA":
+            self = EPOS2_FONT_A
+        case "fontB":
+            self = EPOS2_FONT_B
+        default:
+            self = EPOS2_FONT_A
         }
     }
 }
