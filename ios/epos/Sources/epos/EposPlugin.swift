@@ -68,7 +68,9 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
 
     private func connect(result: @escaping FlutterResult, arguments: Any?) {
         guard let args = arguments as? [String: Any],
-            let target = args["target"] as? String
+            let target = args["target"] as? String,
+            let series = args["series"] as? String,
+            let model = args["model"] as? String
         else {
             result(
                 FlutterError(
@@ -77,7 +79,7 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
             return
         }
 
-        guard createPrinter() else {
+        guard createPrinter(series: series, model: model) else {
             result(
                 FlutterError(
                     code: "PRINTER_CREATION_FAILED",
@@ -199,6 +201,8 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
                         status = printer?.addTextSmooth(smooth.eposBoolValue)
                             ?? EPOS2_ERR_PARAM.rawValue
                     }
+                case "image":
+                    
                 case "feedUnit":
                     if let unit = command["unit"] as? Int {
                         status =
@@ -272,13 +276,13 @@ public class EposPlugin: NSObject, FlutterPlugin, Epos2PtrReceiveDelegate,
         return UIGraphicsGetImageFromCurrentImageContext()
     }
 
-    private func createPrinter() -> Bool {
+    private func createPrinter(series: String, model: String) -> Bool {
         if printer != nil {
             return true
         }
         printer = Epos2Printer.init(
-            printerSeries: EPOS2_TM_T88.rawValue,
-            lang: EPOS2_MODEL_JAPANESE.rawValue
+            printerSeries: Epos2PrinterSeries(series).rawValue,
+            lang: Epos2ModelLang(model).rawValue
         )
 
         printer?.setReceiveEventDelegate(self)
@@ -432,5 +436,107 @@ extension Epos2Cut {
 extension Bool {
     var eposBoolValue: Int32 {
         return self ? EPOS2_TRUE : EPOS2_FALSE
+    }
+}
+
+extension Epos2PrinterSeries {
+    init(_ s: String) {
+        switch s {
+        case "TM_M10":
+            self = EPOS2_TM_M10
+        case "TM_M30":
+            self = EPOS2_TM_M30
+        case "TM_P20":
+            self = EPOS2_TM_P20
+        case "TM_P60":
+            self = EPOS2_TM_P60
+        case "TM_P60II":
+            self = EPOS2_TM_P60II
+        case "TM_P80":
+            self = EPOS2_TM_P80
+        case "TM_T20":
+            self = EPOS2_TM_T20
+        case "TM_T60":
+            self = EPOS2_TM_T60
+        case "TM_T70":
+            self = EPOS2_TM_T70
+        case "TM_T81":
+            self = EPOS2_TM_T81
+        case "TM_T82":
+            self = EPOS2_TM_T82
+        case "TM_T83":
+            self = EPOS2_TM_T83
+        case "TM_T88":
+            self = EPOS2_TM_T88
+        case "TM_T90":
+            self = EPOS2_TM_T90
+        case "TM_T90KP":
+            self = EPOS2_TM_T90KP
+        case "TM_U220":
+            self = EPOS2_TM_U220
+        case "TM_U330":
+            self = EPOS2_TM_U330
+        case "TM_L90":
+            self = EPOS2_TM_L90
+        case "TM_H6000":
+            self = EPOS2_TM_H6000
+        case "TM_T83III":
+            self = EPOS2_TM_T83III
+        case "TM_T100":
+            self = EPOS2_TM_T100
+        case "TM_M30II":
+            self = EPOS2_TM_M30II
+        case "TS_100":
+            self = EPOS2_TS_100
+        case "TM_M50":
+            self = EPOS2_TM_M50
+        case "TM_T88VII":
+            self = EPOS2_TM_T88VII
+        case "TM_L90LFC":
+            self = EPOS2_TM_L90LFC
+        case "TM_L100":
+            self = EPOS2_TM_L100
+        case "TM_P20II":
+            self = EPOS2_TM_P20II
+        case "TM_P80II":
+            self = EPOS2_TM_P80II
+        case "TM_M30III":
+            self = EPOS2_TM_M30III
+        case "TM_M50II":
+            self = EPOS2_TM_M50II
+        case "TM_M55":
+            self = EPOS2_TM_M55
+        case "TM_U220II":
+            self = EPOS2_TM_U220II
+        case "SB_H50":
+            self = EPOS2_SB_H50
+        case "SB_M30":
+            self = EPOS2_SB_M30
+        default:
+            self = EPOS2_TM_M10
+        }
+    }
+}
+
+extension Epos2ModelLang {
+    init(_ s: String) {
+        switch s {
+        case "enAwk":
+            self = EPOS2_MODEL_ANK
+        case "ja":
+            self = EPOS2_MODEL_JAPANESE
+        case "zhCh":
+            self = EPOS2_MODEL_CHINESE
+        case "zhTw":
+            self = EPOS2_MODEL_TAIWAN
+        case "ko":
+            self = EPOS2_MODEL_KOREAN
+        case "th":
+            self = EPOS2_MODEL_THAI
+        case "sa":
+            self = EPOS2_MODEL_SOUTHASIA
+        default:
+            self = EPOS2_MODEL_ANK
+        }
     }
 }
